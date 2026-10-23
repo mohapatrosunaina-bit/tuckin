@@ -1,0 +1,18 @@
+global:
+  environment: staging
+
+restaurantService:
+  replicaCount: 2
+
+orderService:
+  replicaCount: 2
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+
+deliveryService:
+  replicaCount: 2
+
+frontend:
+  replicaCount: 2

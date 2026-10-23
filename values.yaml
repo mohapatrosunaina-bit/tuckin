@@ -1,0 +1,114 @@
+# Default values for Tuckin Food Delivery Platform
+global:
+  environment: development
+
+restaurantService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/heynbharath/tucking/restaurant-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3001
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+orderService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/heynbharath/tucking/order-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3002
+  resources:
+    requests:
+      cpu: 150m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+
+deliveryService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/heynbharath/tucking/delivery-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3003
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+frontend:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/heynbharath/tucking/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 150m
+      memory: 128Mi
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  hosts:
+    - host: tuckin.local
+      paths:
+        - path: /api/restaurants(/|$)(.*)
+          pathType: ImplementationSpecific
+          service: restaurant-service
+          port: 3001
+        - path: /api/orders(/|$)(.*)
+          pathType: ImplementationSpecific
+          service: order-service
+          port: 3002
+        - path: /api/delivery(/|$)(.*)
+          pathType: ImplementationSpecific
+          service: delivery-service
+          port: 3003
+        - path: /()(.*)
+          pathType: ImplementationSpecific
+          service: frontend
+          port: 80
+
+canary:
+  enabled: false
+  weight: 20
+  replicaCount: 1
+  image:
+    repository: ghcr.io/heynbharath/tucking/delivery-service
+    tag: v0.2.0-canary
+

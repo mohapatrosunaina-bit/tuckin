@@ -1,0 +1,44 @@
+---
+- name: Retain and Clean Old Delivery Tracking Logs
+  hosts: all
+  gather_facts: false
+  vars:
+    log_directory: /var/log/tuckin/delivery-service
+    retention_days: 14
+    dry_run: false
+    cron_hour: "2"
+    cron_minute: "30"
+
+  tasks:
+    - name: Ensure target log directory exists
+      ansible.builtin.file:
+        path: "{{ log_directory }}"
+        state: directory
+        mode: '0755'
+
+    - name: Find old delivery tracking logs beyond retention cutoff
+      ansible.builtin.find:
+        paths: "{{ log_directory }}"
+        patterns: "delivery-*.log"
+        age: "{{ retention_days }}d"
+        recurse: false
+      register: expired_delivery_logs
+
+    - name: Report expired log files identified for cleanup
+      ansible.builtin.debug:
+        msg: "Found {{ expired_delivery_logs.matched }} files older than {{ retention_days }} days."
+
+    - name: Delete expired log files if not dry-run mode
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ expired_delivery_logs.files }}"
+      when: not dry_run
+
+    - name: Configure daily cron job for delivery log retention
+      ansible.builtin.cron:
+        name: "tuckin-delivery-log-retention"
+        minute: "{{ cron_minute }}"
+        hour: "{{ cron_hour }}"
+        job: "find {{ log_directory }} -type f -name 'delivery-*.log' -mtime +{{ retention_days }} -delete"
+        state: present

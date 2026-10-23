@@ -1,0 +1,19 @@
+global:
+  environment: production
+
+restaurantService:
+  replicaCount: 3
+
+orderService:
+  replicaCount: 3
+  hpa:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 12
+    targetCPUUtilizationPercentage: 65
+
+deliveryService:
+  replicaCount: 3
+
+frontend:
+  replicaCount: 3

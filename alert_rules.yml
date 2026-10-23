@@ -1,0 +1,22 @@
+groups:
+  - name: tuckin_alerts
+    rules:
+      - alert: HighOrderFailureRate
+        expr: (sum(rate(order_service_http_requests_total{status_code=~"5.."}[2m])) / sum(rate(order_service_http_requests_total[2m]))) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          service: order-service
+        annotations:
+          summary: "Elevated Order Service 5xx failure rate"
+          description: "Order Service 5xx error rate is above 5% for more than 1 minute (current value: {{ $value | humanizePercentage }})."
+
+      - alert: OrderServiceDown
+        expr: up{job="order-service"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: order-service
+        annotations:
+          summary: "Order Service instance unavailable"
+          description: "Prometheus cannot scrape Order Service endpoint for > 30 seconds."

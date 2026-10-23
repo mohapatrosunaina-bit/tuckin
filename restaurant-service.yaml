@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-restaurant-service
+  labels:
+    app: restaurant-service
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.restaurantService.replicaCount }}
+  selector:
+    matchLabels:
+      app: restaurant-service
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: restaurant-service
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: restaurant-service
+          image: "{{ .Values.restaurantService.image.repository }}:{{ .Values.restaurantService.image.tag }}"
+          imagePullPolicy: {{ .Values.restaurantService.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.restaurantService.service.port }}
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "{{ .Values.restaurantService.service.port }}"
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: {{ .Values.restaurantService.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: {{ .Values.restaurantService.service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.restaurantService.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-restaurant-service
+  labels:
+    app: restaurant-service
+    release: {{ .Release.Name }}
+spec:
+  type: {{ .Values.restaurantService.service.type }}
+  ports:
+    - port: {{ .Values.restaurantService.service.port }}
+      targetPort: {{ .Values.restaurantService.service.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: restaurant-service
+    release: {{ .Release.Name }}

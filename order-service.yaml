@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-order-service
+  labels:
+    app: order-service
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.orderService.replicaCount }}
+  selector:
+    matchLabels:
+      app: order-service
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: order-service
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: order-service
+          image: "{{ .Values.orderService.image.repository }}:{{ .Values.orderService.image.tag }}"
+          imagePullPolicy: {{ .Values.orderService.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.orderService.service.port }}
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "{{ .Values.orderService.service.port }}"
+            - name: RESTAURANT_SERVICE_URL
+              value: "http://{{ .Release.Name }}-restaurant-service:{{ .Values.restaurantService.service.port }}"
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: {{ .Values.orderService.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: {{ .Values.orderService.service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.orderService.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-order-service
+  labels:
+    app: order-service
+    release: {{ .Release.Name }}
+spec:
+  type: {{ .Values.orderService.service.type }}
+  ports:
+    - port: {{ .Values.orderService.service.port }}
+      targetPort: {{ .Values.orderService.service.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: order-service
+    release: {{ .Release.Name }}
+{{- if .Values.orderService.hpa.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Release.Name }}-order-service-hpa
+  labels:
+    app: order-service
+    release: {{ .Release.Name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Release.Name }}-order-service
+  minReplicas: {{ .Values.orderService.hpa.minReplicas }}
+  maxReplicas: {{ .Values.orderService.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.orderService.hpa.targetCPUUtilizationPercentage }}
+{{- end }}

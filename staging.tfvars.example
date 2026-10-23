@@ -1,0 +1,5 @@
+environment     = "staging"
+namespace       = "tuckin-staging"
+release_name    = "tuckin-staging"
+values_file     = "../helm/tuckin/values-staging.yaml"
+kubeconfig_path = "~/.kube/config"

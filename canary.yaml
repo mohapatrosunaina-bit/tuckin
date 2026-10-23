@@ -1,0 +1,103 @@
+{{- if .Values.canary.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-delivery-service-canary
+  labels:
+    app: delivery-service
+    release: {{ .Release.Name }}
+    track: canary
+spec:
+  replicas: {{ .Values.canary.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: delivery-service
+      release: {{ .Release.Name }}
+      track: canary
+  template:
+    metadata:
+      labels:
+        app: delivery-service
+        release: {{ .Release.Name }}
+        track: canary
+    spec:
+      containers:
+        - name: delivery-service
+          image: "{{ .Values.canary.image.repository }}:{{ .Values.canary.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3003
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3003"
+            - name: FEATURE_AI_ETA_ENABLED
+              value: "true"
+            - name: CANARY_RELEASE
+              value: "true"
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 3003
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 3003
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-delivery-service-canary
+  labels:
+    app: delivery-service
+    release: {{ .Release.Name }}
+    track: canary
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3003
+      targetPort: 3003
+      protocol: TCP
+      name: http
+  selector:
+    app: delivery-service
+    release: {{ .Release.Name }}
+    track: canary
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-delivery-canary-ingress
+  labels:
+    release: {{ .Release.Name }}
+    track: canary
+  annotations:
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "{{ .Values.canary.weight | default 20 }}"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: "tuckin.local"
+      http:
+        paths:
+          - path: /api/delivery(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ .Release.Name }}-delivery-service-canary
+                port:
+                  number: 3003
+{{- end }}

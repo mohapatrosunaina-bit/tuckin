@@ -1,0 +1,92 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "Orders Placed Throughput",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(order_service_orders_placed_total[1m])) * 60",
+          "legendFormat": "Orders / min"
+        }
+      ]
+    },
+    {
+      "title": "HTTP Request Rate by Service",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 9, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (route) (rate(order_service_http_requests_total[1m]))",
+          "legendFormat": "{{route}}"
+        }
+      ]
+    },
+    {
+      "title": "Order Service 5xx Failure Rate",
+      "type": "gauge",
+      "gridPos": { "h": 6, "w": 9, "x": 15, "y": 0 },
+      "targets": [
+        {
+          "expr": "(sum(rate(order_service_http_requests_total{status_code=~\"5..\"}[1m])) or vector(0)) / (sum(rate(order_service_http_requests_total[1m])) or vector(1)) * 100",
+          "legendFormat": "5xx Failure %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "red", "value": 5 }
+            ]
+          },
+          "unit": "percent"
+        }
+      }
+    },
+    {
+      "title": "HTTP Requests by Status Code",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "expr": "sum by (status_code) (rate(order_service_http_requests_total[1m]))",
+          "legendFormat": "Status {{status_code}}"
+        }
+      ]
+    },
+    {
+      "title": "Node.js Process Memory & Event Loop Lag",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "targets": [
+        {
+          "expr": "order_service_process_resident_memory_bytes / 1024 / 1024",
+          "legendFormat": "Resident Memory (MB)"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["tuckin", "orders", "production"],
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "title": "Tuckin Platform — Executive Health & Load Dashboard",
+  "version": 1
+}

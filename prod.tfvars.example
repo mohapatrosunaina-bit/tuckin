@@ -1,0 +1,5 @@
+environment     = "prod"
+namespace       = "tuckin-prod"
+release_name    = "tuckin-prod"
+values_file     = "../helm/tuckin/values-prod.yaml"
+kubeconfig_path = "~/.kube/config"

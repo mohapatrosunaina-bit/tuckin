@@ -1,0 +1,16 @@
+global:
+  environment: development
+
+restaurantService:
+  replicaCount: 1
+
+orderService:
+  replicaCount: 1
+  hpa:
+    enabled: false
+
+deliveryService:
+  replicaCount: 1
+
+frontend:
+  replicaCount: 1
