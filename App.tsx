@@ -263,7 +263,7 @@ export default function App() {
         <div className="brand-logo">
           <span className="brand-icon">🍛</span>
           <div>
-            <h1>Tuckin</h1>
+            <h1>MealTrail</h1>
             <p className="subtitle">Production DevOps & Cloud Microservices Platform</p>
           </div>
         </div>
